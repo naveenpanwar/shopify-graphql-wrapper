@@ -4,6 +4,7 @@ from urllib import request
 from decouple import config
 from datetime import datetime
 import time
+import json
 
 shop_address = config('SHOP_ADDRESS')
 access_token = config('ACCESS_TOKEN')
@@ -15,7 +16,7 @@ headers["X-Shopify-Access-Token"] = access_token
 
 query = """
 {
-    orders(first: 5 {query}) {
+    orders(first: 50 {query}) {
         edges {
             node {
                 id
@@ -41,6 +42,12 @@ query = """
 }
 """
 
+def getOrdersList(data):
+    raw_data = json.loads(data)
+    edges = raw_data['data']['orders']['edges']
+    print(edges)
+    print(len(edges))
+
 def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None):
     global query
     data = qu = q = d = ""
@@ -54,7 +61,7 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
         d += "processed_at:<"+max_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
 
     if fulfillment_status:
-        d += "fulfillment_status="+fulfillment_status
+        d += "fulfillment_status:"+fulfillment_status
 
     if d != "":
         qu = q.format(d)
@@ -64,18 +71,19 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
         data = query.replace("{query}",qu)
     else:
         data = query.replace("{query}","")
+    print(data)
 
     data = data.encode('utf-8')
     req = request.Request(api_url, data=data, headers=headers, method="POST")
 
     response = urllib.request.urlopen(req)
-    print(response.read().decode('utf-8'))
+    getOrdersList(response.read().decode('utf-8'))
 
 now = datetime.now()
 time.sleep(2)
 now2 = datetime.now()
-Orders(min_processed_at=now,max_processed_at=now2,fulfillment_status="pending")
+Orders(min_processed_at=now,max_processed_at=now2,fulfillment_status="any")
 Orders(min_processed_at=now)
 Orders(max_processed_at=now2)
-Orders(fulfillment_status="pending")
+Orders(fulfillment_status="shipped")
 Orders()
