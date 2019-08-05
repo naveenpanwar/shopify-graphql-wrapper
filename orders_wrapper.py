@@ -30,8 +30,7 @@ query = """
                 name
                 displayFulfillmentStatus
                 customer {
-                    firstName
-                    lastName
+                    displayName
                 }
             }
         }
@@ -41,12 +40,27 @@ query = """
     }
 }
 """
+def parseOrderNode(node):
+    output = {}
+    output['order_id'] = node['node']['id']
+    output['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
+    output['name'] = node['node']['name']
+    output['fulfillment_status'] = node['node']['displayFulfillmentStatus']
+    if node['node']['customer']:
+        output['customer_name'] = node['node']['customer']['displayName']
+    else:
+        output['customer_name'] = None
+
+    return output
 
 def getOrdersList(data):
+    output = []
     raw_data = json.loads(data)
     edges = raw_data['data']['orders']['edges']
-    print(edges)
-    print(len(edges))
+    for node in edges:
+        output.append(parseOrderNode(node))
+
+    print(output)
 
 def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None):
     global query
@@ -71,7 +85,6 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
         data = query.replace("{query}",qu)
     else:
         data = query.replace("{query}","")
-    print(data)
 
     data = data.encode('utf-8')
     req = request.Request(api_url, data=data, headers=headers, method="POST")
