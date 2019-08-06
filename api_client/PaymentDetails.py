@@ -36,3 +36,5 @@ def PaymentDetails():
                 OUTPUT += node
 
     return OUTPUT
+
+print(PaymentDetails())

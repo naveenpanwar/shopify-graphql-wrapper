@@ -3,12 +3,6 @@ from urllib import request
 from decouple import config
 import json
 
-shop_address = config('SHOP_ADDRESS')
-access_token = config('ACCESS_TOKEN')
-
-headers = {}
-headers["Content-Type"] = "application/json"
-headers["X-Shopify-Access-Token"] = access_token
 
 
 def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
@@ -44,7 +38,12 @@ def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_st
     return temp_query_var.encode('utf-8')
 
 def getJSONData(query_data):
-    global shop_address, headers
+    shop_address = config('SHOP_ADDRESS')
+    access_token = config('ACCESS_TOKEN')
+
+    headers = {}
+    headers["Content-Type"] = "application/graphql"
+    headers["X-Shopify-Access-Token"] = access_token
     api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/graphql.json"
 
     req = request.Request(api_url, data=query_data, headers=headers, method="POST")
@@ -55,12 +54,18 @@ def getJSONData(query_data):
     return data
 
 def getTransactionByOrder(order_id):
-    global shop_address, headers
+    shop_address = config('SHOP_ADDRESS')
+    access_token = config('ACCESS_TOKEN')
+
+    headers = {}
+    headers["Content-Type"] = "application/json"
+    headers["X-Shopify-Access-Token"] = access_token
     api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/orders/{}/transactions.json"
     data = {}
     url = api_url.format(order_id)
     req = request.Request(url, data=data, headers=headers, method="GET")
     response = urllib.request.urlopen(req).read().decode('utf-8')
+    print(response)
 
     json_data = json.loads(response)
     return json_data
