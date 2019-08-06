@@ -16,11 +16,13 @@ headers["X-Shopify-Access-Token"] = access_token
 
 query = """
 {
-    orders(first: 10) {
+    orders(first: 3) {
         edges {
+            cursor
             node {
-                lineItems(first: 10) {
+                lineItems(first: 20) {
                     edges {
+                        cursor
                         node {
                             id
                             sku
@@ -62,11 +64,11 @@ query = """
                             }
                         }
                     }
-                    pageInfo {
-                        hasNextPage
-                    }
                 }
             }
+        }
+        pageInfo {
+            hasNextPage
         }
     }
 }
