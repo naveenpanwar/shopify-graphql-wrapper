@@ -5,6 +5,7 @@ from decouple import config
 from datetime import datetime
 import time
 import json
+from HelperFunctions import getQuery
 
 shop_address = config('SHOP_ADDRESS')
 access_token = config('ACCESS_TOKEN')
@@ -14,9 +15,11 @@ headers = {}
 headers["Content-Type"] = "application/graphql"
 headers["X-Shopify-Access-Token"] = access_token
 
-query = """
+OUTPUT = []
+
+QUERY = """
 {
-    orders(first: 3) {
+    orders(first: 3 {query} {cursor}) {
         edges {
             cursor
             node {
@@ -64,6 +67,9 @@ query = """
                             }
                         }
                     }
+                    pageInfo {
+                        hasNextPage
+                    }
                 }
             }
         }
@@ -73,17 +79,19 @@ query = """
     }
 }
 """
-def parseLineItemNode(node):
-    output = {}
-    output['order_id'] = node['node']['id']
-    output['sku'] = node['node']['sku']
-    output['price'] = node['node']['originalTotalSet']['shopMoney']['amount']+" "+node['node']['originalTotalSet']['shopMoney']['currencyCode']
-    output['title'] = node['node']['title']
-    output['quantity'] = node['node']['quantity']
-    output['fulfillable_quantity'] = node['node']['fulfillableQuantity']
-    output['variant_id'] = node['node']['variant']['id']
-    output['properties'] = node['node']['customAttributes']
-    output['taxable'] = node['node']['taxable']
+def parseLineItemNode(node, node_cursor):
+    line_item_node = {}
+    line_item_node['node_cursor'] = node_cursor
+    line_item_node['cursor'] = node['cursor']
+    line_item_node['order_id'] = node['node']['id']
+    line_item_node['sku'] = node['node']['sku']
+    line_item_node['price'] = node['node']['originalTotalSet']['shopMoney']['amount']+" "+node['node']['originalTotalSet']['shopMoney']['currencyCode']
+    line_item_node['title'] = node['node']['title']
+    line_item_node['quantity'] = node['node']['quantity']
+    line_item_node['fulfillable_quantity'] = node['node']['fulfillableQuantity']
+    line_item_node['variant_id'] = node['node']['variant']['id']
+    line_item_node['properties'] = node['node']['customAttributes']
+    line_item_node['taxable'] = node['node']['taxable']
     
     tax_lines = []
     for item in node['node']['taxLines']:
@@ -93,33 +101,43 @@ def parseLineItemNode(node):
         line['rate_percentage'] = item['ratePercentage']
         line['title'] = item['title']
         tax_lines.append(line)
-    output['tax_lines'] = tax_lines
+    line_item_node['tax_lines'] = tax_lines
     
     discounts = []
-    for items in node['node']['discountAllocations']:
+    for item in node['node']['discountAllocations']:
         discounts.append(item['allocatedAmountSet']['shopMoney']['amount']+" "+item['allocatedAmountSet']['shopMoney']['currencyCode'])
-    output['discount_allocations'] = discounts
+    line_item_node['discount_allocations'] = discounts
 
-    return output
+    return line_item_node 
 
 def getLineItemsList(data):
     output = []
-    raw_data = json.loads(data)
-    edges = raw_data['data']['orders']['edges']
+    edges = data['data']['orders']['edges']
     for node in edges:
         lineItems = node['node']['lineItems']['edges']
+        node_cursor = node['cursor']
         for lineItem in lineItems:
-            output.append(parseLineItemNode(lineItem))
+            output.append(parseLineItemNode(lineItem, node_cursor))
 
     return output
 
-def LineItems():
-    global query
-    data = query.encode('utf-8')
-    req = request.Request(api_url, data=data, headers=headers, method="POST")
+def LineItems(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
+    global QUERY 
+    global OUTPUT
 
-    response = urllib.request.urlopen(req)
-    #getOrdersList(response.read().decode('utf-8'))
-    return getLineItemsList(response.read().decode('utf-8'))
+    query_data = getQuery(QUERY, min_processed_at, max_processed_at, fulfillment_status, cursor)
+    req = request.Request(api_url, data=query_data, headers=headers, method="POST")
+    response = urllib.request.urlopen(req).read().decode('utf-8')
+
+    data = json.loads(response)
+    page_info = data['data']['orders']['pageInfo']
+
+    line_items_list = getLineItemsList(data)
+    OUTPUT += line_items_list
+    
+    if page_info['hasNextPage']:
+        LineItems(cursor=line_items_list[-1]['node_cursor'] )
+
+    return OUTPUT
 
 print(LineItems())
