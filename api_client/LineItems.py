@@ -139,5 +139,3 @@ def LineItems(min_processed_at=None, max_processed_at=None, fulfillment_status=N
         LineItems(cursor=line_items_list[-1]['node_cursor'] )
 
     return OUTPUT
-
-print(LineItems())

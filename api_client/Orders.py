@@ -84,9 +84,5 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
 
     if page_info['hasNextPage']:
         Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
-
-    print("Lovery")
     
     return OUTPUT
-
-print(Orders())
