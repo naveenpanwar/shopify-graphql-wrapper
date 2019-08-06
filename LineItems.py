@@ -73,27 +73,45 @@ query = """
     }
 }
 """
-def parseOrderNode(node):
+def parseLineItemNode(node):
     output = {}
     output['order_id'] = node['node']['id']
-    output['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
-    output['name'] = node['node']['name']
-    output['fulfillment_status'] = node['node']['displayFulfillmentStatus']
-    if node['node']['customer']:
-        output['customer_name'] = node['node']['customer']['displayName']
-    else:
-        output['customer_name'] = None
+    output['sku'] = node['node']['sku']
+    output['price'] = node['node']['originalTotalSet']['shopMoney']['amount']+" "+node['node']['originalTotalSet']['shopMoney']['currencyCode']
+    output['title'] = node['node']['title']
+    output['quantity'] = node['node']['quantity']
+    output['fulfillable_quantity'] = node['node']['fulfillableQuantity']
+    output['variant_id'] = node['node']['variant']['id']
+    output['properties'] = node['node']['customAttributes']
+    output['taxable'] = node['node']['taxable']
+    
+    tax_lines = []
+    for item in node['node']['taxLines']:
+        line = {}
+        line['price'] = item['priceSet']['shopMoney']['amount']+" "+item['priceSet']['shopMoney']['currencyCode']
+        line['rate'] = item['rate']
+        line['rate_percentage'] = item['ratePercentage']
+        line['title'] = item['title']
+        tax_lines.append(line)
+    output['tax_lines'] = tax_lines
+    
+    discounts = []
+    for items in node['node']['discountAllocations']:
+        discounts.append(item['allocatedAmountSet']['shopMoney']['amount']+" "+item['allocatedAmountSet']['shopMoney']['currencyCode'])
+    output['discount_allocations'] = discounts
 
     return output
 
-def getOrdersList(data):
+def getLineItemsList(data):
     output = []
     raw_data = json.loads(data)
     edges = raw_data['data']['orders']['edges']
     for node in edges:
-        output.append(parseOrderNode(node))
+        lineItems = node['node']['lineItems']['edges']
+        for lineItem in lineItems:
+            output.append(parseLineItemNode(lineItem))
 
-    print(output)
+    return output
 
 def LineItems():
     global query
@@ -102,6 +120,6 @@ def LineItems():
 
     response = urllib.request.urlopen(req)
     #getOrdersList(response.read().decode('utf-8'))
-    print(response.read().decode('utf-8'))
+    return getLineItemsList(response.read().decode('utf-8'))
 
-LineItems()
+print(LineItems())
