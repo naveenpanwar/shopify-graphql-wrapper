@@ -49,7 +49,7 @@ def parseOrderNode(node):
     output['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
     output['name'] = node['node']['name']
     output['fulfillment_status'] = node['node']['displayFulfillmentStatus']
-    output['cursor'] = node['node']['cursor']
+    output['cursor'] = node['cursor']
     if node['node']['customer']:
         output['customer_name'] = node['node']['customer']['displayName']
     else:
@@ -64,7 +64,7 @@ def getOrdersList(data):
     for node in edges:
         output_list.append(parseOrderNode(node))
 
-    print(output_list)
+    return output_list
 
 def getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor):
     global query
@@ -74,10 +74,10 @@ def getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor):
         query_wrapper+= "query: \"{}\""
 
     if cursor:
-        cursor_wrapper += "after: "+cursor
-        temp_query_var.replace("{cursor}",cursor_wrapper)
+        cursor_wrapper = ", after:"+cursor
+        temp_query_var = temp_query_var.replace("{cursor}",cursor_wrapper)
     else:
-        temp_query_var.replace("{cursor}","")
+        temp_query_var = temp_query_var.replace("{cursor}","")
 
     if min_processed_at:
         params += "processed_at:>"+min_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
@@ -105,12 +105,13 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
     req = request.Request(api_url, data=query, headers=headers, method="POST")
 
     response = urllib.request.urlopen(req).read().decode('utf-8')
+    print(response)
     
     data = json.loads(response)
-    page_info = raw_data['data']['orders']['pageInfo']
+    page_info = data['data']['orders']['pageInfo']
 
     if page_info['hasNextPage']:
-        orders_list = getOrdersList(response)
+        orders_list = getOrdersList(data)
         output += orders_list
         Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
     print(output)
