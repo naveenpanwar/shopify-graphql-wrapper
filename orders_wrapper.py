@@ -14,10 +14,13 @@ headers = {}
 headers["Content-Type"] = "application/graphql"
 headers["X-Shopify-Access-Token"] = access_token
 
+output = []
+
 query = """
 {
-    orders(first: 50 {query}) {
+    orders(first: 5 {query} {cursor}) {
         edges {
+            cursor
             node {
                 id
                 processedAt
@@ -46,6 +49,7 @@ def parseOrderNode(node):
     output['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
     output['name'] = node['node']['name']
     output['fulfillment_status'] = node['node']['displayFulfillmentStatus']
+    output['cursor'] = node['node']['cursor']
     if node['node']['customer']:
         output['customer_name'] = node['node']['customer']['displayName']
     else:
@@ -54,43 +58,63 @@ def parseOrderNode(node):
     return output
 
 def getOrdersList(data):
-    output = []
-    raw_data = json.loads(data)
-    edges = raw_data['data']['orders']['edges']
+    output_list = []
+    edges = data['data']['orders']['edges']
+
     for node in edges:
-        output.append(parseOrderNode(node))
+        output_list.append(parseOrderNode(node))
 
-    print(output)
+    print(output_list)
 
-def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None):
+def getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor):
     global query
-    data = qu = q = d = ""
+    temp_query_var = query
+    data = query_string = query_wrapper = params = cursor_wrapper = ""
     if min_processed_at or max_processed_at or fulfillment_status:
-        q+= "query: \"{}\""
+        query_wrapper+= "query: \"{}\""
+
+    if cursor:
+        cursor_wrapper += "after: "+cursor
+        temp_query_var.replace("{cursor}",cursor_wrapper)
+    else:
+        temp_query_var.replace("{cursor}","")
 
     if min_processed_at:
-        d += "processed_at:>"+min_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
+        params += "processed_at:>"+min_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
 
     if max_processed_at:
-        d += "processed_at:<"+max_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
+        params += "processed_at:<"+max_processed_at.strftime("%Y-%m-%dT%H-%M-%SZ")+" "
 
     if fulfillment_status:
-        d += "fulfillment_status:"+fulfillment_status
+        params += "fulfillment_status:"+fulfillment_status
 
-    if d != "":
-        qu = q.format(d)
+    if params != "":
+        query_string = query_wrapper.format(params)
 
-    if qu != "":
-        qu = ", "+qu
-        data = query.replace("{query}",qu)
+    if query_string != "":
+        query_string = ", "+query_string
+        temp_query_var = temp_query_var.replace("{query}",query_string)
     else:
-        data = query.replace("{query}","")
+        temp_query_var = temp_query_var.replace("{query}","")
 
-    data = data.encode('utf-8')
-    req = request.Request(api_url, data=data, headers=headers, method="POST")
+    return temp_query_var.encode('utf-8')
 
-    response = urllib.request.urlopen(req)
-    getOrdersList(response.read().decode('utf-8'))
+def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
+    global output
+    query = getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor)
+    req = request.Request(api_url, data=query, headers=headers, method="POST")
+
+    response = urllib.request.urlopen(req).read().decode('utf-8')
+    
+    data = json.loads(response)
+    page_info = raw_data['data']['orders']['pageInfo']
+
+    if page_info['hasNextPage']:
+        orders_list = getOrdersList(response)
+        output += orders_list
+        Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
+    print(output)
+
 
 now = datetime.now()
 time.sleep(2)
