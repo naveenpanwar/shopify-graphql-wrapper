@@ -1,19 +1,5 @@
 #some comment
-import urllib
-from urllib import request
-from decouple import config
-from datetime import datetime
-import time
-import json
-from HelperFunctions import getQuery
-
-shop_address = config('SHOP_ADDRESS')
-access_token = config('ACCESS_TOKEN')
-
-api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/graphql.json"
-headers = {}
-headers["Content-Type"] = "application/graphql"
-headers["X-Shopify-Access-Token"] = access_token
+from HelperFunctions import getQuery, getJSONData
 
 OUTPUT = []
 
@@ -126,10 +112,8 @@ def LineItems(min_processed_at=None, max_processed_at=None, fulfillment_status=N
     global OUTPUT
 
     query_data = getQuery(QUERY, min_processed_at, max_processed_at, fulfillment_status, cursor)
-    req = request.Request(api_url, data=query_data, headers=headers, method="POST")
-    response = urllib.request.urlopen(req).read().decode('utf-8')
+    data = getJSONData(query_data)
 
-    data = json.loads(response)
     page_info = data['data']['orders']['pageInfo']
 
     line_items_list = getLineItemsList(data)
