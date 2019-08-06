@@ -14,9 +14,9 @@ headers = {}
 headers["Content-Type"] = "application/graphql"
 headers["X-Shopify-Access-Token"] = access_token
 
-output = []
+OUTPUT = []
 
-query = """
+QUERY = """
 {
     orders(first: 5 {query} {cursor}) {
         edges {
@@ -43,19 +43,20 @@ query = """
     }
 }
 """
-def parseOrderNode(node):
-    output = {}
-    output['order_id'] = node['node']['id']
-    output['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
-    output['name'] = node['node']['name']
-    output['fulfillment_status'] = node['node']['displayFulfillmentStatus']
-    output['cursor'] = node['cursor']
-    if node['node']['customer']:
-        output['customer_name'] = node['node']['customer']['displayName']
-    else:
-        output['customer_name'] = None
 
-    return output
+def parseOrderNode(node):
+    output_node = {}
+    output_node['order_id'] = node['node']['id']
+    output_node['total_price'] = node['node']['totalPriceSet']['shopMoney']['amount']+" "+node['node']['totalPriceSet']['shopMoney']['currencyCode']
+    output_node['name'] = node['node']['name']
+    output_node['fulfillment_status'] = node['node']['displayFulfillmentStatus']
+    output_node['cursor'] = node['cursor']
+    if node['node']['customer']:
+        output_node['customer_name'] = node['node']['customer']['displayName']
+    else:
+        output_node['customer_name'] = None
+
+    return output_node
 
 def getOrdersList(data):
     output_list = []
@@ -67,8 +68,8 @@ def getOrdersList(data):
     return output_list
 
 def getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor):
-    global query
-    temp_query_var = query
+    global QUERY 
+    temp_query_var = QUERY 
     data = query_string = query_wrapper = params = cursor_wrapper = ""
     if min_processed_at or max_processed_at or fulfillment_status:
         query_wrapper+= "query: \"{}\""
@@ -100,28 +101,23 @@ def getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor):
     return temp_query_var.encode('utf-8')
 
 def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
-    global output
-    query = getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor)
-    req = request.Request(api_url, data=query, headers=headers, method="POST")
+    global OUTPUT 
+    query_data = getQuery(min_processed_at, max_processed_at, fulfillment_status, cursor)
+    req = request.Request(api_url, data=query_data, headers=headers, method="POST")
 
     response = urllib.request.urlopen(req).read().decode('utf-8')
-    print(response)
     
     data = json.loads(response)
     page_info = data['data']['orders']['pageInfo']
 
+    orders_list = getOrdersList(data)
+    OUTPUT += orders_list
+
     if page_info['hasNextPage']:
-        orders_list = getOrdersList(data)
-        output += orders_list
         Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
-    print(output)
 
+    print("Lovery")
+    
+    return OUTPUT
 
-now = datetime.now()
-time.sleep(2)
-now2 = datetime.now()
-Orders(min_processed_at=now,max_processed_at=now2,fulfillment_status="any")
-Orders(min_processed_at=now)
-Orders(max_processed_at=now2)
-Orders(fulfillment_status="shipped")
-Orders()
+print(Orders())
