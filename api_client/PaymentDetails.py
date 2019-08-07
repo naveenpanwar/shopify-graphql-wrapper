@@ -5,9 +5,9 @@ from datetime import datetime
 import time
 import json
 
-from Orders import Orders
+from .Orders import Orders
 
-from HelperFunctions import getTransactionByOrder
+from .HelperFunctions import getTransactionByOrder
 
 OUTPUT = []
 def getTransactionNode(transaction):
@@ -36,5 +36,3 @@ def PaymentDetails():
                 OUTPUT += node
 
     return OUTPUT
-
-print(PaymentDetails())

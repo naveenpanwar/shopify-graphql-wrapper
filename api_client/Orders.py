@@ -1,4 +1,4 @@
-from HelperFunctions import getQuery, getJSONData
+from .HelperFunctions import getQuery, getJSONData
 
 OUTPUT = []
 
@@ -68,5 +68,3 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
         Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
     
     return OUTPUT
-
-print(Orders())

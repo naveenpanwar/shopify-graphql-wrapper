@@ -3,8 +3,6 @@ from urllib import request
 from decouple import config
 import json
 
-
-
 def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
     temp_query_var = query 
     data = query_string = query_wrapper = params = cursor_wrapper = ""
