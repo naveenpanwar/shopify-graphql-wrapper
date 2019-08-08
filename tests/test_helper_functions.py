@@ -16,5 +16,10 @@ class HelperFunctionsTests(unittest.TestCase):
         query = HelperFunctions.getQuery(s, fulfillment_status="PENDING")
         self.assertEqual(query, b'''orders(first: 5 , query: "fulfillment_status:PENDING" )''')
 
+    def test_get_query_returns_correct_value_with_only_cursor(self):
+        s = "orders(first: 5 {query} {cursor})"
+        query = HelperFunctions.getQuery(s, cursor="PENDING")
+        self.assertEqual(query, b'''orders(first: 5  , after:PENDING)''')
+
 if __name__ == '__main__':
     unittest.main()

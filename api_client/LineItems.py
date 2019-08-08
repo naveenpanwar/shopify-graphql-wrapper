@@ -5,69 +5,60 @@ OUTPUT = []
 
 QUERY = """
 {
-    orders(first: 3 {query} {cursor}) {
-        edges {
-            cursor
-            node {
-                lineItems(first: 20) {
-                    edges {
-                        cursor
-                        node {
-                            id
-                            sku
-                            originalTotalSet {
-                                shopMoney {
-                                    currencyCode
-                                    amount
-                                }
+    order(id: {order_id}) {
+        lineItems(first: 2 {cursor}) {
+            edges {
+                cursor
+                node {
+                    id
+                    sku
+                    originalTotalSet {
+                        shopMoney {
+                            currencyCode
+                            amount
+                        }
+                    }
+                    title
+                    quantity
+                    fulfillableQuantity
+                    variant {
+                        id
+                    }
+                    customAttributes {
+                        key
+                        value
+                    }
+                    taxable
+                    taxLines {
+                        priceSet {
+                            shopMoney {
+                                currencyCode
+                                amount
                             }
-                            title
-                            quantity
-                            fulfillableQuantity
-                            variant {
-                                id
-                            }
-                            customAttributes {
-                                key
-                                value
-                            }
-                            taxable
-                            taxLines {
-                                priceSet {
-                                    shopMoney {
-                                        currencyCode
-                                        amount
-                                    }
-                                }
-                                rate
-                                ratePercentage
-                                title
-                            }
-                            discountAllocations {
-                                allocatedAmountSet {
-                                    shopMoney {
-                                        currencyCode
-                                        amount
-                                    }
-                                }
+                        }
+                        rate
+                        ratePercentage
+                        title
+                    }
+                    discountAllocations {
+                        allocatedAmountSet {
+                            shopMoney {
+                                currencyCode
+                                amount
                             }
                         }
                     }
-                    pageInfo {
-                        hasNextPage
-                    }
                 }
             }
-        }
-        pageInfo {
-            hasNextPage
+            pageInfo {
+                hasNextPage
+            }
         }
     }
 }
 """
-def parseLineItemNode(node, node_cursor):
+def parseLineItemNode(node):
     line_item_node = {}
-    line_item_node['node_cursor'] = node_cursor
     line_item_node['cursor'] = node['cursor']
     line_item_node['order_id'] = node['node']['id']
     line_item_node['sku'] = node['node']['sku']
@@ -98,28 +89,31 @@ def parseLineItemNode(node, node_cursor):
 
 def getLineItemsList(data):
     output = []
-    edges = data['data']['orders']['edges']
+    edges = data['data']['order']['lineItems']['edges']
     for node in edges:
-        lineItems = node['node']['lineItems']['edges']
-        node_cursor = node['cursor']
-        for lineItem in lineItems:
-            output.append(parseLineItemNode(lineItem, node_cursor))
+        output.append(parseLineItemNode(node))
 
     return output
 
-def LineItems(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
+def LineItems(order_id, cursor=None):
+    """
+    Function Returns a list of dictonary items where each item is an LineItem from an order with required fields
+    LineItems( order_id ) where order_id is the unique_id of an order
+    """
     global QUERY 
     global OUTPUT
 
-    query_data = getQuery(QUERY, min_processed_at, max_processed_at, fulfillment_status, cursor)
+    query_data = getQuery(query=QUERY,order_id=order_id, cursor=cursor)
+    print(query_data)
     data = getJSONData(query_data)
+    print( data )
 
-    page_info = data['data']['orders']['pageInfo']
+    page_info = data['data']['order']['lineItems']['pageInfo']
 
     line_items_list = getLineItemsList(data)
     OUTPUT += line_items_list
     
     if page_info['hasNextPage']:
-        LineItems(cursor=line_items_list[-1]['node_cursor'] )
+        LineItems(order_id=order_id, cursor=line_items_list[-1]['cursor'])
 
     return OUTPUT

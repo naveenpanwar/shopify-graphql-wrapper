@@ -3,14 +3,18 @@ from urllib import request
 from decouple import config
 import json
 
-def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
+def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None, order_id=None):
     temp_query_var = query 
     data = query_string = query_wrapper = params = cursor_wrapper = ""
     if min_processed_at or max_processed_at or fulfillment_status:
         query_wrapper+= "query: \"{}\""
 
+    if order_id:
+        order_id = "\""+order_id+"\""
+        temp_query_var = temp_query_var.replace("{order_id}",order_id)
+
     if cursor:
-        cursor_wrapper = ", after:"+cursor
+        cursor_wrapper = ", after:\""+cursor+"\""
         temp_query_var = temp_query_var.replace("{cursor}",cursor_wrapper)
     else:
         temp_query_var = temp_query_var.replace("{cursor}","")
