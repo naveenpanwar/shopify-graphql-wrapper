@@ -55,7 +55,7 @@ def getJSONData(query_data):
     data = json.loads(response)
     return data
 
-def getTransactionByOrder(order_id):
+def getTransactionsByOrder(order_id):
     shop_address = config('SHOP_ADDRESS')
     access_token = config('ACCESS_TOKEN')
 
@@ -66,8 +66,14 @@ def getTransactionByOrder(order_id):
     data = {}
     url = api_url.format(order_id)
     req = request.Request(url, data=data, headers=headers, method="GET")
-    response = urllib.request.urlopen(req).read().decode('utf-8')
-    print(response)
+    try:
+        response = urllib.request.urlopen(req).read().decode('utf-8')
+    except urllib.error.HTTPError:
+        response = "{\"error\": \"HTTPError, Bad URL or Bad Request\"}"
 
-    json_data = json.loads(response)
+    try:
+        json_data = json.loads(response)
+    except json.decoder.JSONDecodeError:
+        json_data = json.loads("{\"error\": \"Cannot decode JSON data\"}")
+
     return json_data

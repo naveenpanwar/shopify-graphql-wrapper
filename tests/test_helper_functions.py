@@ -19,7 +19,11 @@ class HelperFunctionsTests(unittest.TestCase):
     def test_get_query_returns_correct_value_with_only_cursor(self):
         s = "orders(first: 5 {query} {cursor})"
         query = HelperFunctions.getQuery(s, cursor="PENDING")
-        self.assertEqual(query, b'''orders(first: 5  , after:PENDING)''')
+        self.assertEqual(query, b'''orders(first: 5  , after:\"PENDING\")''')
+
+    def test_get_transations_by_order_returns_dict_with_error_key_on_bad_order_id(self):
+        res = HelperFunctions.getTransactionsByOrder("123")
+        self.assertEqual(res['error'], "HTTPError, Bad URL or Bad Request")
 
 if __name__ == '__main__':
     unittest.main()

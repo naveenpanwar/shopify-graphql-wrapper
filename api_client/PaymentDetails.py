@@ -7,7 +7,7 @@ import json
 
 from .Orders import Orders
 
-from .HelperFunctions import getTransactionByOrder
+from .HelperFunctions import getTransactionsByOrder
 
 OUTPUT = []
 def getTransactionNode(transaction):
@@ -21,18 +21,25 @@ def getTransactionNode(transaction):
     else:
         return None
 
-def PaymentDetails():
+def PaymentDetails(order_id):
+    """
+    Returns a list of dictonary items where each item is a PaymentDetail from an order with required fields
+    PaymentDetails( order_id ) where order_id is the unique_id of an order
+    """
     global OUTPUT
-    orders_list = Orders()
-    for item in orders_list:
-        order_id = item['order_id'].split('/')[-1]
-        json_data = getTransactionByOrder(order_id)
+    data = getTransactionsByOrder(order_id)
 
+    if "error" in data:
+        return data 
+    
+    if "transactions" in data:
         transactions = json_data['transactions']
+    else:
+        return data 
 
-        for transaction in transactions:
-            node = getTransactionNode(transaction)
-            if node:
-                OUTPUT += node
+    for transaction in transactions:
+        node = getTransactionNode(transaction)
+        if node:
+            OUTPUT += node
 
     return OUTPUT

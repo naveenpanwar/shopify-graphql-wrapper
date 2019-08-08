@@ -97,16 +97,14 @@ def getLineItemsList(data):
 
 def LineItems(order_id, cursor=None):
     """
-    Function Returns a list of dictonary items where each item is an LineItem from an order with required fields
+    Returns a list of dictonary items where each item is an LineItem from an order with required fields
     LineItems( order_id ) where order_id is the unique_id of an order
     """
     global QUERY 
     global OUTPUT
 
     query_data = getQuery(query=QUERY,order_id=order_id, cursor=cursor)
-    print(query_data)
     data = getJSONData(query_data)
-    print( data )
 
     page_info = data['data']['order']['lineItems']['pageInfo']
 

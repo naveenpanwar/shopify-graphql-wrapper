@@ -55,7 +55,7 @@ def getOrdersList(data):
 
 def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
     """
-    Function Returns a list of dictonary items where each item is an Order listing with required fields
+    Returns a list of dictonary items where each item is an Order listing with required fields
     Orders( min_processed_at, max_processed_at, fulfillment_status )
     min_processed_at ( Get all orders after this date, here the value must be a valid python Datetime() instance )
     max_processed_at ( Get all orders before this date, here the value must be a valid python Datetime() instance )
