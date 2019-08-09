@@ -25,5 +25,9 @@ class HelperFunctionsTests(unittest.TestCase):
         res = HelperFunctions.getTransactionsByOrder("123")
         self.assertEqual(res['error'], "HTTPError, Bad URL or Bad Request")
 
+    def test_get_json_data_returns_dict_with_error_on_bad_url(self):
+        res = HelperFunctions.getJSONData("123")
+        self.assertEqual(res['error'], "HTTPError, Bad URL or Bad Request")
+
 if __name__ == '__main__':
     unittest.main()

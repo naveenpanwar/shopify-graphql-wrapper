@@ -3,6 +3,12 @@ from urllib import request
 from decouple import config
 import json
 
+shop_address = config('SHOP_ADDRESS')
+access_token = config('ACCESS_TOKEN')
+    
+headers = {}
+headers["X-Shopify-Access-Token"] = access_token
+
 def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None, order_id=None):
     temp_query_var = query 
     data = query_string = query_wrapper = params = cursor_wrapper = ""
@@ -39,41 +45,44 @@ def getQuery(query, min_processed_at=None, max_processed_at=None, fulfillment_st
 
     return temp_query_var.encode('utf-8')
 
-def getJSONData(query_data):
-    shop_address = config('SHOP_ADDRESS')
-    access_token = config('ACCESS_TOKEN')
-
-    headers = {}
-    headers["Content-Type"] = "application/graphql"
-    headers["X-Shopify-Access-Token"] = access_token
-    api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/graphql.json"
-
-    req = request.Request(api_url, data=query_data, headers=headers, method="POST")
-    
-    response = urllib.request.urlopen(req).read().decode('utf-8')
-    
-    data = json.loads(response)
-    return data
-
-def getTransactionsByOrder(order_id):
-    shop_address = config('SHOP_ADDRESS')
-    access_token = config('ACCESS_TOKEN')
-
-    headers = {}
-    headers["Content-Type"] = "application/json"
-    headers["X-Shopify-Access-Token"] = access_token
-    api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/orders/{}/transactions.json"
-    data = {}
-    url = api_url.format(order_id)
-    req = request.Request(url, data=data, headers=headers, method="GET")
+def getResponse( request ):
     try:
-        response = urllib.request.urlopen(req).read().decode('utf-8')
+        response = urllib.request.urlopen(request).read().decode('utf-8')
     except urllib.error.HTTPError:
         response = "{\"error\": \"HTTPError, Bad URL or Bad Request\"}"
 
+    return response
+
+def getDecodedJson( response ):
     try:
-        json_data = json.loads(response)
+        data = json.loads(response)
     except json.decoder.JSONDecodeError:
-        json_data = json.loads("{\"error\": \"Cannot decode JSON data\"}")
+        data = json.loads("{\"error\": \"Cannot decode JSON data\"}")
 
     return json_data
+
+def getJSONData( query_data ):
+    global shop_address, access_token, headers
+
+    local_headers = headers
+    local_headers["Content-Type"] = "application/graphql"
+    api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/graphql.json"
+
+    req = request.Request(api_url, data=query_data, headers=local_headers, method="POST")
+    
+    response = getResponse( req )
+    data = getDecodedJson( response )
+    return data
+
+def getTransactionsByOrder( order_id ):
+    global shop_address, access_token, headers
+    
+    local_headers = headers
+    local_headers["Content-Type"] = "application/json"
+    api_url = "https://"+shop_address+".myshopify.com/admin/api/2019-07/orders/{}/transactions.json"
+    url = api_url.format(order_id)
+    req = request.Request(url, data={}, headers=local_headers, method="GET")
+    
+    response = getResponse( req )
+    data = getDecodedJson( response )
+    return data
