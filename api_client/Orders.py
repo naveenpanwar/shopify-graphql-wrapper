@@ -1,7 +1,5 @@
 from .HelperFunctions import getQuery, getJSONData
 
-OUTPUT = []
-
 QUERY = """
 {
     orders(first: 5 {query} {cursor}) {
@@ -53,17 +51,8 @@ def getOrdersList(data):
 
     return output_list
 
-def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
-    """
-    Returns a list of dictonary items where each item is an Order listing with required fields
-    Orders( min_processed_at, max_processed_at, fulfillment_status )
-    min_processed_at ( Get all orders after this date, here the value must be a valid python Datetime() instance )
-    max_processed_at ( Get all orders before this date, here the value must be a valid python Datetime() instance )
-    fulfillment_status ( can have following values ['shipped','partial','unshipped','any'] passed as strings)
-    """
-    global OUTPUT
-    global QUERY
-    query_data = getQuery(QUERY, min_processed_at, max_processed_at, fulfillment_status, cursor)
+def getOrders(query, output, min_processed_at=None, max_processed_at=None, fulfillment_status=None, cursor=None):
+    query_data = getQuery(query, min_processed_at, max_processed_at, fulfillment_status, cursor)
     data = getJSONData(query_data)
 
     if "errors" in data:
@@ -72,9 +61,28 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
     page_info = data['data']['orders']['pageInfo']
 
     orders_list = getOrdersList(data)
-    OUTPUT += orders_list
+    output += orders_list
 
     if page_info['hasNextPage']:
-        Orders(min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status, cursor=orders_list[-1]['cursor'] )
+        getOrders(query,
+                output, 
+                min_processed_at=min_processed_at, 
+                max_processed_at=max_processed_at, 
+                fulfillment_status=fulfillment_status, 
+                cursor=orders_list[-1]['cursor'] 
+                )
+
+    return output
+
+def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None):
+    """
+    Returns a list of dictonary items where each item is an Order listing with required fields
+    Orders( min_processed_at, max_processed_at, fulfillment_status )
+    min_processed_at ( Get all orders after this date, here the value must be a valid python Datetime() instance )
+    max_processed_at ( Get all orders before this date, here the value must be a valid python Datetime() instance )
+    fulfillment_status ( can have following values ['shipped','partial','unshipped','any'] passed as strings)
+    """
+    global QUERY
+    output = getOrders( QUERY, [], min_processed_at=min_processed_at, max_processed_at=max_processed_at, fulfillment_status=fulfillment_status)
     
-    return OUTPUT
+    return output 
