@@ -49,7 +49,7 @@ def getResponse( request ):
     try:
         response = urllib.request.urlopen(request).read().decode('utf-8')
     except urllib.error.HTTPError:
-        response = "{\"error\": \"HTTPError, Bad URL or Bad Request\"}"
+        response = "{\"errors\": \"HTTPError, Bad URL or Bad Request\"}"
 
     return response
 
@@ -57,9 +57,9 @@ def getDecodedJson( response ):
     try:
         data = json.loads(response)
     except json.decoder.JSONDecodeError:
-        data = json.loads("{\"error\": \"Cannot decode JSON data\"}")
+        data = json.loads("{\"errors\": \"Cannot decode JSON data\"}")
 
-    return json_data
+    return data
 
 def getJSONData( query_data ):
     global shop_address, access_token, headers

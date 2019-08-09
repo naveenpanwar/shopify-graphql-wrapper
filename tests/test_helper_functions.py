@@ -23,11 +23,11 @@ class HelperFunctionsTests(unittest.TestCase):
 
     def test_get_transations_by_order_returns_dict_with_error_key_on_bad_order_id(self):
         res = HelperFunctions.getTransactionsByOrder("123")
-        self.assertEqual(res['error'], "HTTPError, Bad URL or Bad Request")
+        self.assertEqual(res['errors'], "HTTPError, Bad URL or Bad Request")
 
     def test_get_json_data_returns_dict_with_error_on_bad_url(self):
-        res = HelperFunctions.getJSONData("123")
-        self.assertEqual(res['error'], "HTTPError, Bad URL or Bad Request")
+        res = HelperFunctions.getJSONData(b"123")
+        self.assertIn('Parse error', res['errors'][0]['message'])
 
 if __name__ == '__main__':
     unittest.main()

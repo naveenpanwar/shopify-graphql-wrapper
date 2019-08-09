@@ -66,6 +66,9 @@ def Orders(min_processed_at=None, max_processed_at=None, fulfillment_status=None
     query_data = getQuery(QUERY, min_processed_at, max_processed_at, fulfillment_status, cursor)
     data = getJSONData(query_data)
 
+    if "errors" in data:
+        return data
+
     page_info = data['data']['orders']['pageInfo']
 
     orders_list = getOrdersList(data)
