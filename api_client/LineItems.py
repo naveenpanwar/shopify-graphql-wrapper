@@ -1,7 +1,5 @@
 #some comment
-from .HelperFunctions import getQuery, getJSONData
-
-OUTPUT = []
+from .HelperFunctions import getQuery, getJSONData, getDecodedJson
 
 QUERY = """
 {
@@ -95,23 +93,34 @@ def getLineItemsList(data):
 
     return output
 
-def LineItems(order_id, cursor=None):
+def getLineItems(query, output, order_id, cursor=None):
+    query_data = getQuery(query=query,order_id=order_id, cursor=cursor)
+    data = getJSONData(query_data)
+
+    if "errors" in data:
+        return data
+
+    if 'order' not in data['data']:
+        return getDecodedJson( 
+                "{\"errors\": \"Wrong Query, please check\"}" 
+                )
+    page_info = data['data']['order']['lineItems']['pageInfo']
+
+    line_items_list = getLineItemsList(data)
+    output += line_items_list
+    
+    if page_info['hasNextPage']:
+        getLineItems(query, output, order_id=order_id, cursor=line_items_list[-1]['cursor'])
+
+    return output
+
+def LineItems(order_id):
     """
     Returns a list of dictonary items where each item is an LineItem from an order with required fields
     LineItems( order_id ) where order_id is the unique_id of an order
     """
     global QUERY 
-    global OUTPUT
 
-    query_data = getQuery(query=QUERY,order_id=order_id, cursor=cursor)
-    data = getJSONData(query_data)
+    output = getLineItems(QUERY, [], order_id)
 
-    page_info = data['data']['order']['lineItems']['pageInfo']
-
-    line_items_list = getLineItemsList(data)
-    OUTPUT += line_items_list
-    
-    if page_info['hasNextPage']:
-        LineItems(order_id=order_id, cursor=line_items_list[-1]['cursor'])
-
-    return OUTPUT
+    return output 

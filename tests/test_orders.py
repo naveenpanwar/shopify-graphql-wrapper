@@ -10,5 +10,23 @@ class OrdersTests(unittest.TestCase):
         orders = Orders.Orders()
         self.assertEqual(type(orders), type([]))
 
+    def test_get_orders_returns_error_on_invalid_query(self):
+        """
+        It means orders function should only return orders
+        not some other data
+        """
+        query = "123"
+        orders = Orders.getOrders(query, [])
+        self.assertIn("errors", orders)
+
+    def test_get_orders_returns_error_on_wrong_query(self):
+        """
+        It means orders function should only return orders
+        not some other data
+        """
+        query = LineItems.QUERY 
+        orders = Orders.getOrders(query, [])
+        self.assertIn("errors", orders)
+
 if __name__ == '__main__':
     unittest.main()
